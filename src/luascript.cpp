@@ -1347,6 +1347,10 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(L, COMBAT_HOLYDAMAGE);
 	registerEnum(L, COMBAT_DEATHDAMAGE);
 
+	// TOOLTIPS
+	registerEnum(L, COMBAT_COUNT);
+	// TOOLTIPS END
+
 	registerEnum(L, COMBAT_PARAM_TYPE);
 	registerEnum(L, COMBAT_PARAM_EFFECT);
 	registerEnum(L, COMBAT_PARAM_DISTANCEEFFECT);
@@ -1456,6 +1460,12 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(L, CONDITION_PARAM_SPECIALSKILL_MANALEECHCHANCE);
 	registerEnum(L, CONDITION_PARAM_SPECIALSKILL_MANALEECHAMOUNT);
 	registerEnum(L, CONDITION_PARAM_AGGRESSIVE);
+
+	// TOOLTIPS
+	registerEnum(L, STAT_MAGICPOINTS);
+	registerEnum(L, STAT_MAXHITPOINTS);
+	registerEnum(L, STAT_MAXMANAPOINTS);
+	    // TOOLTIPS END
 
 	registerEnum(L, CONST_ME_NONE);
 	registerEnum(L, CONST_ME_DRAWBLOOD);
@@ -2615,6 +2625,10 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod(L, "Item", "setStoreItem", LuaScriptInterface::luaItemSetStoreItem);
 	registerMethod(L, "Item", "isStoreItem", LuaScriptInterface::luaItemIsStoreItem);
 
+	// TOOLTIPS
+	registerMethod(L, "Item", "getRealUID", LuaScriptInterface::luaItemGetRealUID);
+	// TOOLTIPS END
+
 	registerMethod(L, "Item", "setReflect", LuaScriptInterface::luaItemSetReflect);
 	registerMethod(L, "Item", "getReflect", LuaScriptInterface::luaItemGetReflect);
 
@@ -2923,6 +2937,9 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod(L, "Player", "getFightMode", LuaScriptInterface::luaPlayerGetFightMode);
 
 	registerMethod(L, "Player", "getStoreInbox", LuaScriptInterface::luaPlayerGetStoreInbox);
+	// TOOLTIPS
+	registerMethod(L, "Player", "getItem", LuaScriptInterface::luaPlayerGetItem);
+	// TOOLTIPS END
 
 	registerMethod(L, "Player", "isNearDepotBox", LuaScriptInterface::luaPlayerIsNearDepotBox);
 
@@ -3221,6 +3238,21 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod(L, "ItemType", "hasSubType", LuaScriptInterface::luaItemTypeHasSubType);
 
 	registerMethod(L, "ItemType", "isStoreItem", LuaScriptInterface::luaItemTypeIsStoreItem);
+
+
+	// TOOLTIPS
+
+	registerMethod(L, "ItemType", "getSpecialSkill", LuaScriptInterface::luaItemTypeGetSpecialSkill);
+	registerMethod(L, "ItemType", "getAbsorbPercent", LuaScriptInterface::luaItemTypeGetAbsorbPercent);
+	registerMethod(L, "ItemType", "getSkill", LuaScriptInterface::luaItemTypeGetSkill);
+	registerMethod(L, "ItemType", "getSpeed", LuaScriptInterface::luaItemTypeGetSpeed);
+	registerMethod(L, "ItemType", "getStat", LuaScriptInterface::luaItemTypeGetStat);
+	registerMethod(L, "ItemType", "getStatPercent", LuaScriptInterface::luaItemTypeGetStatPercent);
+	registerMethod(L, "ItemType", "getHealthGain", LuaScriptInterface::luaItemTypeGetHealthGain);
+	registerMethod(L, "ItemType", "getHealthTicks", LuaScriptInterface::luaItemTypeGetHealthTicks);
+	registerMethod(L, "ItemType", "getManaGain", LuaScriptInterface::luaItemTypeGetManaGain);
+	registerMethod(L, "ItemType", "getManaTicks", LuaScriptInterface::luaItemTypeGetManaTicks);
+	// TOOLTIPSEND
 
 	// Combat
 	registerClass(L, "Combat", "", LuaScriptInterface::luaCombatCreate);
@@ -7346,6 +7378,22 @@ int LuaScriptInterface::luaItemIsStoreItem(lua_State* L)
 	return 1;
 }
 
+// TOOLTIPS
+int LuaScriptInterface::luaItemGetRealUID(lua_State* L)
+{
+	// item:getRealUID()
+	Item* item = tfs::lua::getUserdata<Item>(L, 1);
+	if (item) {
+		lua_pushnumber(L, item->getRealUID());
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+// TOOLTIPSEND
+
+
 int LuaScriptInterface::luaItemSetReflect(lua_State* L)
 {
 	// item:setReflect(combatType, reflect)
@@ -11158,6 +11206,48 @@ int LuaScriptInterface::luaPlayerGetStoreInbox(lua_State* L)
 	return 1;
 }
 
+
+
+// TOOLTIPS
+int LuaScriptInterface::luaPlayerGetItem(lua_State* L)
+{
+	// player:getItem(position)
+	// player:getItem(realuid)
+	Player* player = tfs::lua::getUserdata<Player>(L, 1);
+	if (!player) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	Thing* thing = nullptr;
+	Item* item = nullptr;
+
+	if (isNumber(L, 2)) {
+		uint32_t uid = tfs::lua::getNumber<uint32_t>(L, 2);
+		item = player->getItemByUID(uid);
+	} else if (!lua_istable(L, 2)) {
+		int32_t stackpos;
+		Position pos = tfs::lua::getPosition(L, 2, stackpos);
+		thing = g_game.internalGetThing(player, pos, stackpos, 0, STACKPOS_LOOK);
+
+		if (!thing) {
+			lua_pushnil(L);
+			return 1;
+		}
+		item = thing->getItem();
+	}
+
+	if (item) {
+		tfs::lua::pushUserdata<Item>(L, item);
+		tfs::lua::setItemMetatable(L, -1, item);
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+// TOOLTIPS END
+
 int LuaScriptInterface::luaPlayerIsNearDepotBox(lua_State* L)
 {
 	// player:isNearDepotBox()
@@ -14223,6 +14313,224 @@ int LuaScriptInterface::luaItemTypeIsStoreItem(lua_State* L)
 	}
 	return 1;
 }
+
+
+
+// TOOLTIPS
+int LuaScriptInterface::luaItemTypeGetSpecialSkill(lua_State* L)
+{
+	// itemType:getSpecialSkill(specialSkillType)
+	const ItemType* itemType = tfs::lua::getUserdata<const ItemType>(L, 1);
+	if (!itemType) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	SpecialSkills_t specialSkillType = tfs::lua::getNumber<SpecialSkills_t>(L, 2);
+	if (specialSkillType <= SPECIALSKILL_LAST) {
+		auto& abilities = itemType->abilities;
+		if (abilities) {
+			lua_pushnumber(L, abilities->specialSkills[specialSkillType]);
+		} else {
+			lua_pushnil(L);
+		}
+	} else {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+int LuaScriptInterface::luaItemTypeGetAbsorbPercent(lua_State* L)
+{
+	// itemType:getAbsorbPercent(combatType)
+	const ItemType* itemType = tfs::lua::getUserdata<const ItemType>(L, 1);
+	if (!itemType) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	uint8_t i = tfs::lua::getNumber<uint8_t>(L, 2);
+	auto& abilities = itemType->abilities;
+	if (abilities) {
+		lua_pushnumber(L, abilities->absorbPercent[i]);
+	} else {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+int LuaScriptInterface::luaItemTypeGetSkill(lua_State* L)
+{
+	// itemType:getSkill(skillType)
+	const ItemType* itemType = tfs::lua::getUserdata<const ItemType>(L, 1);
+	if (!itemType) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	skills_t skillType = tfs::lua::getNumber<skills_t>(L, 2);
+	if (skillType <= SKILL_LAST) {
+		auto& abilities = itemType->abilities;
+		if (abilities) {
+			lua_pushnumber(L, abilities->skills[skillType]);
+		} else {
+			lua_pushnil(L);
+		}
+	} else {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+int LuaScriptInterface::luaItemTypeGetSpeed(lua_State* L)
+{
+	// itemType:getSpeed()
+	const ItemType* itemType = tfs::lua::getUserdata<const ItemType>(L, 1);
+	if (!itemType) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	auto& abilities = itemType->abilities;
+	if (abilities) {
+		lua_pushnumber(L, abilities->speed);
+	} else {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+int LuaScriptInterface::luaItemTypeGetStat(lua_State* L)
+{
+	// itemType:getStat(statType)
+	const ItemType* itemType = tfs::lua::getUserdata<const ItemType>(L, 1);
+	if (!itemType) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	stats_t statType = tfs::lua::getNumber<stats_t>(L, 2);
+	if (statType <= STAT_LAST) {
+		auto& abilities = itemType->abilities;
+		if (abilities) {
+			lua_pushnumber(L, abilities->stats[statType]);
+		} else {
+			lua_pushnil(L);
+		}
+	} else {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+int LuaScriptInterface::luaItemTypeGetStatPercent(lua_State* L)
+{
+	// itemType:getStatPercent(statType)
+	const ItemType* itemType = tfs::lua::getUserdata<const ItemType>(L, 1);
+	if (!itemType) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	stats_t statType = tfs::lua::getNumber<stats_t>(L, 2);
+	if (statType <= STAT_LAST) {
+		auto& abilities = itemType->abilities;
+		if (abilities) {
+			lua_pushnumber(L, abilities->statsPercent[statType]);
+		} else {
+			lua_pushnil(L);
+		}
+	} else {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+int LuaScriptInterface::luaItemTypeGetHealthGain(lua_State* L)
+{
+	// itemType:getHealthGain()
+	const ItemType* itemType = tfs::lua::getUserdata<const ItemType>(L, 1);
+	if (!itemType) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	auto& abilities = itemType->abilities;
+	if (abilities) {
+		lua_pushnumber(L, abilities->healthGain);
+	} else {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+int LuaScriptInterface::luaItemTypeGetHealthTicks(lua_State* L)
+{
+	// itemType:getHealthTicks()
+	const ItemType* itemType = tfs::lua::getUserdata<const ItemType>(L, 1);
+	if (!itemType) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	auto& abilities = itemType->abilities;
+	if (abilities) {
+		lua_pushnumber(L, abilities->healthTicks);
+	} else {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+int LuaScriptInterface::luaItemTypeGetManaGain(lua_State* L)
+{
+	// itemType:getManaGain()
+	const ItemType* itemType = tfs::lua::getUserdata<const ItemType>(L, 1);
+	if (!itemType) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	auto& abilities = itemType->abilities;
+	if (abilities) {
+		lua_pushnumber(L, abilities->manaGain);
+	} else {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+int LuaScriptInterface::luaItemTypeGetManaTicks(lua_State* L)
+{
+	// itemType:getManaTicks()
+	const ItemType* itemType = tfs::lua::getUserdata<const ItemType>(L, 1);
+	if (!itemType) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	auto& abilities = itemType->abilities;
+	if (abilities) {
+		lua_pushnumber(L, abilities->manaTicks);
+	} else {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+// TOOLTIPSEND
+
+
 
 // Combat
 

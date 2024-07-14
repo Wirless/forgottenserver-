@@ -921,6 +921,13 @@ public:
 	const Tile* getTile() const override;
 	bool isRemoved() const override { return !parent || parent->isRemoved(); }
 
+	// TOOLTIPS
+	void setRealUID(uint32_t uid) { realUId = uid; }
+
+	uint32_t getRealUID() const { return realUId; }
+	// TOOLTIPS END
+
+
 protected:
 	Cylinder* parent = nullptr;
 
@@ -934,6 +941,10 @@ private:
 	uint32_t referenceCounter = 0;
 
 	uint8_t count = 1; // number of stacked items
+
+	// TOOLTIPS
+	uint32_t realUId = 0;
+	// TOOLTIPS END
 
 	bool loadedFromMap = false;
 

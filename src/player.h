@@ -1104,6 +1104,8 @@ public:
 
 	void updateRegeneration();
 
+	Item* getItemByUID(uint32_t uid) const;
+
 	const std::map<uint8_t, OpenContainer>& getOpenContainers() const { return openContainers; }
 
 	uint16_t getClientExpDisplay() const { return clientExpDisplay; }
